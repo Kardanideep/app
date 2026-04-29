@@ -13,7 +13,6 @@ exports.register = async (req, res) => {
         // Check if user email already exists
         const [existingUser] = await connection.execute('SELECT * FROM users WHERE email = ?', [email]);
         if (existingUser.length > 0) {
-            await connection.release();
             return res.status(400).json({ message: 'Email address already registered' });
         }
 
@@ -21,7 +20,6 @@ exports.register = async (req, res) => {
         if (roll_number) {
             const [existingRoll] = await connection.execute('SELECT * FROM student_profiles WHERE roll_number = ?', [roll_number]);
             if (existingRoll.length > 0) {
-                await connection.release();
                 return res.status(400).json({ message: 'Roll number already exists' });
             }
         }
