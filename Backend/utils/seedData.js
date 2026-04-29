@@ -9,11 +9,11 @@ async function seedStudentData(studentId, currentSem = 4) {
         const targetSem = parseInt(currentSem) || Math.floor(Math.random() * 4) + 1;
 
         const subjectPool = [
-            'Advanced Mathematics', 'Quantum Physics', 'Data Structures', 'Algorithms', 'Computer Networks', 
-            'Operating Systems', 'Software Engineering', 'Database Management', 'Artificial Intelligence', 
+            'Advanced Mathematics', 'Quantum Physics', 'Data Structures', 'Algorithms', 'Computer Networks',
+            'Operating Systems', 'Software Engineering', 'Database Management', 'Artificial Intelligence',
             'Machine Learning', 'Cloud Computing', 'Cyber Security', 'Web Technologies', 'Mobile App Development',
             'Theory of Computation', 'Compiler Design', 'Microprocessors', 'Digital Electronics', 'Discrete Mathematics',
-            'Information Security', 'Big Data Analytics', 'Internet of Things', 'Graphics and Multimedia', 
+            'Information Security', 'Big Data Analytics', 'Internet of Things', 'Graphics and Multimedia',
             'Human Computer Interaction', 'Distributed Systems', 'Blockchain Technology', 'Software Testing'
         ];
 
@@ -22,7 +22,7 @@ async function seedStudentData(studentId, currentSem = 4) {
         for (let s = 1; s <= targetSem; s++) {
             const status = s === targetSem ? 'ongoing' : 'completed';
             const title = `Semester ${s}`;
-            
+
             const [semResult] = await db.execute(
                 'INSERT INTO semesters (student_id, title, status, start_date, end_date) VALUES (?, ?, ?, ?, ?)',
                 [studentId, title, status, '2023-01-01', '2023-06-30']
@@ -44,7 +44,7 @@ async function seedStudentData(studentId, currentSem = 4) {
                 const subjectId = subResult.insertId;
 
                 if (status === 'completed') {
-                    const marks = Math.floor(Math.random() * 50) + 50; 
+                    const marks = Math.floor(Math.random() * 50) + 50;
                     const grade = marks >= 90 ? 'O' : marks >= 80 ? 'A+' : marks >= 70 ? 'A' : marks >= 60 ? 'B+' : 'B';
                     await db.execute(
                         'INSERT INTO results (student_id, subject_id, semester_id, marks, total_marks, grade) VALUES (?, ?, ?, ?, ?, ?)',

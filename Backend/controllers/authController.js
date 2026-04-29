@@ -6,11 +6,24 @@ const { seedStudentData } = require('../utils/seedData');
 exports.register = async (req, res) => {
     const { email, password, role, full_name, roll_number, course, semester_current, phone } = req.body;
 
+    const connection = await db.getConnection();
     try {
-        // Check if user already exists
-        const [existingUser] = await db.execute('SELECT * FROM users WHERE email = ?', [email]);
+        await connection.beginTransaction();
+
+        // Check if user email already exists
+        const [existingUser] = await connection.execute('SELECT * FROM users WHERE email = ?', [email]);
         if (existingUser.length > 0) {
-            return res.status(400).json({ message: 'User already exists' });
+            await connection.release();
+            return res.status(400).json({ message: 'Email address already registered' });
+        }
+
+        // Check if roll number already exists
+        if (roll_number) {
+            const [existingRoll] = await connection.execute('SELECT * FROM student_profiles WHERE roll_number = ?', [roll_number]);
+            if (existingRoll.length > 0) {
+                await connection.release();
+                return res.status(400).json({ message: 'Roll number already exists' });
+            }
         }
 
         // Hash password
@@ -18,7 +31,7 @@ exports.register = async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, salt);
 
         // Insert into users table
-        const [userResult] = await db.execute(
+        const [userResult] = await connection.execute(
             'INSERT INTO users (email, password_hash, role) VALUES (?, ?, ?)',
             [email, hashedPassword, role || 'student']
         );
@@ -27,20 +40,25 @@ exports.register = async (req, res) => {
 
         // If student, insert into student_profiles
         if (role === 'student' || !role) {
-            const [profileResult] = await db.execute(
+            const [profileResult] = await connection.execute(
                 'INSERT INTO student_profiles (user_id, roll_number, full_name, course, semester_current, phone) VALUES (?, ?, ?, ?, ?, ?)',
                 [userId, roll_number, full_name, course, semester_current, phone]
             );
             
             const studentProfileId = profileResult.insertId;
             // Seed initial data based on current semester
-            await seedStudentData(studentProfileId, semester_current);
+            // Passing connection to seedStudentData for transaction support
+            await seedStudentData(studentProfileId, semester_current, connection);
         }
 
+        await connection.commit();
         res.status(201).json({ message: 'User registered successfully', userId });
     } catch (error) {
+        if (connection) await connection.rollback();
         console.error(error);
         res.status(500).json({ message: 'Server error', error: error.message });
+    } finally {
+        if (connection) connection.release();
     }
 };
 
